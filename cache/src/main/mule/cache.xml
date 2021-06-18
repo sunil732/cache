@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="51f94e97-a01c-438f-b46b-e03b9b7f08bd" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="6b055b58-46e7-4c2d-b945-82efafd0268d" >
+		<http:request-connection host="reqres.in" />
+	</http:request-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="3309636f-0114-494b-bcd1-b92afde2633c" keyGenerationExpression="#[attributes.uriParams.empID]" />
+	<flow name="cacheFlow" doc:id="e933592d-af4b-4201-b872-9b76d17a2ba6" >
+		<http:listener doc:name="Listener" doc:id="f8b13915-e392-4e8e-bc3a-06b81dbad20b" config-ref="HTTP_Listener_config" path="/cache/{empID}"/>
+		<logger level="INFO" doc:name="Logger started" doc:id="83471ecf-5a3f-40c0-a9fa-d4234116f100" message="'started'"/>
+		<ee:cache doc:name="Cache" doc:id="8a552cf6-8a2c-457c-a98e-3b4c39e67bc5" cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="Logger" doc:id="f540488c-8760-43d6-b3dd-9962a746cc95" message="'start of cache'"/>
+			<http:request method="GET" doc:name="Request" doc:id="d922e2a7-7ccc-45ef-bf44-6082a6c52798" config-ref="HTTP_Request_configuration" path="/api/users/{userID}">
+			<http:uri-params><![CDATA[#[{
+	"userID":attributes.uriParams.empID
+}]]]></http:uri-params>
+		</http:request>
+			<ee:transform doc:name="Transform Message" doc:id="4479a5ba-d5e2-4fd6-8c6a-54419eb351ac">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="a7c9ef58-4fbf-4881-b31b-6ef3336813c6" message="'end of cache'"/>
+		</ee:cache>
+		<logger level="INFO" doc:name="Logger end " doc:id="e50f14b7-c3e4-41ae-a3fa-381be0e815f9" message="'completed'"/>
+	</flow>
+</mule>
